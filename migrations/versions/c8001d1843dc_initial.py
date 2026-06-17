@@ -45,7 +45,7 @@ def upgrade() -> None:
     op.create_table('tenants',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('plan', sa.Enum('FREE', 'PRO', 'ENTERPRISE', name='plan'), nullable=False),
+    sa.Column('plan', sa.Enum('free', 'pro', 'enterprise', name='plan'), nullable=False),
     sa.Column('api_key_hash', sa.String(length=64), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
