@@ -9,11 +9,12 @@ async def publish_event(
         redis: Redis
 ):
     await redis.xadd(
-        f"events:{tenant.id}",
+        f"events:stream",
         {
             "tenant_id": str(tenant.id),
             "event_name": event.event_name,
             "payload": json.dumps(event.payload),
-            "timestamp": event.timestamp.isoformat()
+            "timestamp": event.timestamp.isoformat(),
+            "retry_count": "0"
         }, maxlen=10000
     )

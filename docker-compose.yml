@@ -13,6 +13,18 @@ services:
       - .:/app
     restart: unless-stopped
 
+  consumer:
+    build: .
+    command: python -m app.consumer
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    restart: unless-stopped
 
   db:
     image: timescale/timescaledb:latest-pg16
