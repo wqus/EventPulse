@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.core.redis import init_redis, close_redis
 from app.api.ingest import router as ingest_router
+from app.api.metrics import router as metrics_router
 
 
 @asynccontextmanager
@@ -14,7 +15,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title='EventPulse', lifespan=lifespan)
 
 app.include_router(ingest_router)
-
+app.include_router(metrics_router)
 
 @app.get("/health")
 async def health_check():
