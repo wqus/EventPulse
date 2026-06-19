@@ -71,7 +71,8 @@ async def retry_message(redis: Redis, data: dict) -> None:
 
 async def process_batch(
         redis: Redis,
-        messages: list
+        messages: list,
+        session_factory=AsyncSessionLocal
 ) -> None:
     valid_events = []
 
@@ -102,7 +103,7 @@ async def process_batch(
 
     try:
 
-        async with AsyncSessionLocal() as session:
+        async with session_factory() as session:
 
             session.add_all([event for _, _, event in valid_events])
 

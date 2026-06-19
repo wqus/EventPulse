@@ -12,9 +12,11 @@ class Settings(BaseSettings):
 
     SYNC_DATABASE_URL: str
     ASYNC_DATABASE_URL: str
+    ASYNC_DATABASE_URL_TEST: str
 
     REDIS_HOST: str
     REDIS_PORT: str
+    REDIS_TEST_URL: str
 
     ADMIN_KEY: str
     TELEGRAM_BOT_TOKEN: str
