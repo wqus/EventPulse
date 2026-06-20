@@ -16,3 +16,13 @@ class MetricsResponse(BaseModel):
     top_events: list[TopEvent]
     from_time: datetime
     to_time: datetime
+
+class TimeseriesPoint(BaseModel):
+    bucket: datetime
+    count: int
+    error_count: int
+
+class TimeseriesResponse(BaseModel):
+    period: str
+    bucket_size: str
+    points: list[TimeseriesPoint]

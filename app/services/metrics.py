@@ -5,7 +5,7 @@ from datetime import datetime
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.metrics import get_metrics
+from app.repositories.metrics import get_metrics, get_timeseries
 
 CACHE_TTL = {
     "1h": 60,
@@ -39,5 +39,30 @@ async def get_metrics_cached(tenant_id: uuid.UUID, period: str, session: AsyncSe
 
     ttl = CACHE_TTL.get(period, 60)
     await redis.set(cache_key, _serialize(data), ex=ttl)
+
+    return data
+
+
+async def get_timeseries_cached(
+        tenant_id: uuid.UUID,
+        period: str,
+        session: AsyncSession,
+        redis: Redis
+) -> dict:
+    cache_key = f"timeseries:{tenant_id}:{period}"
+
+    cached = await redis.get(cache_key)
+    if cached:
+        return json.loads(cached)
+
+    data = await get_timeseries(tenant_id, period, session)
+
+    serializable = dict(data)
+    serializable["points"] = [
+        {**p, "bucket": p["bucket"].isoformat()} for p in data["points"]
+    ]
+
+    ttl = CACHE_TTL.get(period, 60)
+    await redis.set(cache_key, json.dumps(serializable), ex = ttl)
 
     return data
