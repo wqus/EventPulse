@@ -1,3 +1,6 @@
+import logging
+logging.basicConfig(level=logging.WARNING)
+
 import asyncio
 
 from fastapi import FastAPI
@@ -10,11 +13,14 @@ from app.api.metrics import router as metrics_router
 from app.services.alert_checker import run_alert_checker
 from app.api.alerts import router as alert_router
 
-
+logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_redis()
     redis = await get_redis()
+
+    logger.info("Application started")
+
     checker_task = asyncio.create_task(
         run_alert_checker(AsyncSessionLocal, redis)
     )
@@ -23,6 +29,7 @@ async def lifespan(app: FastAPI):
 
     checker_task.cancel()
     await close_redis()
+    logger.info("Application stopped")
 
 
 app = FastAPI(title='EventPulse', lifespan=lifespan)
@@ -30,7 +37,6 @@ app = FastAPI(title='EventPulse', lifespan=lifespan)
 app.include_router(ingest_router)
 app.include_router(metrics_router)
 app.include_router(alert_router)
-
 
 @app.get("/health")
 async def health_check():

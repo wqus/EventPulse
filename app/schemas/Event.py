@@ -1,8 +1,7 @@
-from typing import Any, Dict, Optional, Self
+from typing import Any
 
 from pydantic import BaseModel, field_validator, Field
 from datetime import datetime, timezone, tzinfo
-import uuid
 
 class EventIngest(BaseModel):
     event_name: str = Field(..., min_length=1, max_length=255)

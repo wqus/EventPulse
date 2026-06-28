@@ -4,6 +4,11 @@ services:
     ports:
       - "8000:8000"
     env_file: .env
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
     depends_on:
       db:
         condition: service_healthy
@@ -35,6 +40,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
   db:
     image: timescale/timescaledb:latest-pg16
     env_file:
@@ -56,6 +62,11 @@ services:
       - "6380:6379"
     volumes:
       - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -83,6 +94,18 @@ services:
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
+    restart: unless-stopped
+
+  # ============ LOCUST ============
+  locust:
+    image: locustio/locust:latest
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./:/app       # Монтируем корень проекта в /app
+    command: -f /app/app/locustfile.py --host=http://api:8000
+    depends_on:
+      - api
     restart: unless-stopped
 
 volumes:

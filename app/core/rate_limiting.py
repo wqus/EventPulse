@@ -1,27 +1,65 @@
+import time
 from fastapi import HTTPException
 from redis.asyncio import Redis
-import time
 
-PLAN_LIMITS = {
-    "free": 10,
-    "pro": 100,
-    "enterprise": 1000
-}
+RATE_LIMIT_LUA = """
+local key = KEYS[1]
+local limit = tonumber(ARGV[1])
+local now = tonumber(ARGV[2])
+local window = tonumber(ARGV[3])
+
+-- Удаляем старые записи
+redis.call('ZREMRANGEBYSCORE', key, 0, now - window)
+
+local count = redis.call('ZCARD', key)
+
+if count >= limit then
+    return {0, count}   -- rejected
+end
+
+redis.call('ZADD', key, now, now)
+redis.call('EXPIRE', key, math.ceil(window) + 10)
+
+return {1, count + 1}   -- allowed
+"""
+
+rate_limiter_script = None
+
 
 async def check_rate_limit(tenant_id: str, plan: str, redis: Redis):
     key = f"rate_limit:{tenant_id}"
-    limit = PLAN_LIMITS.get(plan, 10)
+
+    limits = {
+        "free": 100,
+        "pro": 1000,
+        "enterprise": 10000
+    }
+    limit = limits.get(plan, 100)
     now = time.time()
     window = 1.0
 
-    await redis.zremrangebyscore(key, 0, now - window)
+    result = await redis.eval(
+        RATE_LIMIT_LUA,
+        1,
+        key,
+        limit,
+        now,
+        window
+    )
 
-    count = await redis.zcard(key)
+    allowed = result[0]
+    count = result[1]
 
-    if count >= limit:
+    if not allowed:
         raise HTTPException(
-            status_code=409, detail=f"Rate limit exceeded. Plan {plan}, limit: {limit} RPS"
+            status_code=429,
+            detail={
+                "error": "Rate limit exceeded",
+                "limit": limit,
+                "window": window,
+                "current": count,
+                "plan": plan
+            }
         )
 
-    await redis.zadd(key, {str(now): now})
-    await redis.expire(key,2)
+    return True
